@@ -53,11 +53,10 @@ public class Main {
 
 
         final Directory directory = new ByteBuffersDirectory();
-        IndexWriterConfig iwConfig = new IndexWriterConfig();
-        IndexWriter indexWriter = new IndexWriter(directory, iwConfig);
-        indexWriter.addDocument(doc);
-        indexWriter.forceMerge(1);
-        indexWriter.close();
+        try (final IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig())) {
+            indexWriter.addDocument(doc);
+            indexWriter.forceMerge(1);
+        }
 
 
         try (final IndexReader indexReader = DirectoryReader.open(directory)) {
