@@ -32,7 +32,7 @@ public class Main {
         final SpatialContext ctx = JtsSpatialContext.GEO;
         final ShapeFactory shapeFactory = ctx.getShapeFactory();
 
-        Shape polygon = shapeFactory.polygon()
+        final Shape polygon = shapeFactory.polygon()
                 .pointXY(0, 0)
                 .pointXY(25.0, 0)
                 .pointXY(25.0, 25.0)
@@ -45,8 +45,8 @@ public class Main {
         SpatialStrategy strategy = new RecursivePrefixTreeStrategy(grid, "location");
 
 
-        Document doc = new Document();
-        Field[] fields = strategy.createIndexableFields(polygon);
+        final Document doc = new Document();
+        final Field[] fields = strategy.createIndexableFields(polygon);
         for (Field field : fields)
             doc.add(field);
         doc.add(new StoredField("id", 8989));
@@ -60,17 +60,18 @@ public class Main {
         indexWriter.close();
 
 
-        final IndexReader indexReader = DirectoryReader.open(directory);
-        IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+        try (final IndexReader indexReader = DirectoryReader.open(directory)) {
+            final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
+            final Query spatialQuery = strategy.makeQuery(
+                    new SpatialArgs(SpatialOperation.Contains, shapeFactory.pointXY(25.0, 0))
+            );
 
-        Query spatialQuery = strategy.makeQuery(
-                new SpatialArgs(SpatialOperation.Contains, shapeFactory.pointXY(25.0, 0))
-        );
+            // Perform search
+            TopDocs results = indexSearcher.search(spatialQuery, 10);
+            for (ScoreDoc scoreDoc : results.scoreDocs)
+                System.out.println(indexSearcher.storedFields().document(scoreDoc.doc).getField("id").stringValue());
 
-        // Perform search
-        TopDocs results = indexSearcher.search(spatialQuery, 10);
-        for (ScoreDoc scoreDoc : results.scoreDocs)
-            System.out.println(indexSearcher.storedFields().document(scoreDoc.doc).getField("id").stringValue());
+        }
     }
 }
